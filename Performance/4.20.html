@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance</title>
+
+    
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.20/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.20/"></script>
+
+    <style>
+         html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Legend",
+            "esri/widgets/Expand",
+        ], (Map, MapView, FeatureLayer, Legend, Expand) => {
+            const map = new Map({
+                basemap: "gray-vector",
+            });
+            const view = new MapView({
+                map: map,
+                container: "viewDiv",
+                center: [-3, 40],
+                zoom: 2,
+                
+            });
+            const shipboardObsLayer = new FeatureLayer({
+            //    url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/Latest_Shipboard_Observations/FeatureServer/0"
+            url: "https://services1.arcgis.com/nCKYwcSONQTkPA4K/ArcGIS/rest/services/Municipios_Colectivos_Censo2011/FeatureServer/0"
+            });
+            map.add(shipboardObsLayer)
+        });
+    </script>
+</body>
+
+</html>
