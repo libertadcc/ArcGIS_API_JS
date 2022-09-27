@@ -10,7 +10,8 @@ require([
   "esri/Color",
   "esri/layers/GraphicsLayer",
   "esri/Graphic",
-  "esri/geometry/geometryEngine"
+  "esri/geometry/geometryEngine",
+  "esri/rest/support/StatisticDefinition"
 ], (
   Map,
   MapView,
@@ -20,7 +21,8 @@ require([
   histogram,
   uniqueValues,
   Query, Color,
-  GraphicsLayer, Graphic, geometryEngine
+  GraphicsLayer, Graphic, geometryEngine,
+  StatisticDefinition
 ) => {
   const map = new Map({
     basemap: "gray-vector",
@@ -37,7 +39,6 @@ require([
     type: "simple", // autocasts as new SimpleRenderer()
     symbol: {
       type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
-      // size: 6,
       color: "green",
       // color: new Color("rgba(121, 255, 157, 0.85)"),
       outline: {
@@ -69,7 +70,7 @@ require([
   });
   const bufferLayer = new GraphicsLayer();
 
-  map.addMany([bufferLayer, treesLayer]);
+  map.addMany([treesLayer, bufferLayer]);
 
   // Listado de especies
   //   var species = [];
@@ -117,14 +118,14 @@ require([
 
   // ---- ESTADÍSTICAS ----
 
-  // const polySym = {
-  //   type: "simple-fill", // autocasts as new SimpleFillSymbol()
-  //   color: [140, 140, 222, 0.5],
-  //   outline: {
-  //     color: [0, 0, 0, 0.5],
-  //     width: 2
-  //   }
-  // };
+  const polySym = {
+    type: "simple-fill", // autocasts as new SimpleFillSymbol()
+    color: [140, 140, 222, 0.5],
+    outline: {
+      color: [0, 0, 0, 0.5],
+      width: 2
+    }
+  };
   // const pointSym = {
   //   type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
   //   color: [255, 0, 0],
@@ -134,23 +135,46 @@ require([
   //   },
   //   size: 7
   // };
-  // view.on('click', evt => {
-  //   bufferLayer.removeAll();
-  //   const buffer = geometryEngine.buffer(
-  //     evt.mapPoint,
-  //     500,
-  //     "meters"
-  //     // 1,
-  //     // "kilometers"
-  //   );
+  let buffer;
+  const check = document.getElementById('stats');
 
-  //   bufferLayer.add(
-  //     new Graphic({
-  //       geometry: buffer,
-  //       symbol: polySym
-  //     })
-  //   );
-  // });
+  
+  view.on('click', evt => {
+    let msg = document.getElementById('msg-stats');
+    bufferLayer.removeAll();
+
+    if(check.checked) {
+      buffer = geometryEngine.buffer(evt.mapPoint, 200, "meters");
+  
+      bufferLayer.add(
+        new Graphic({
+          geometry: buffer,
+          symbol: polySym
+        })
+      );
+      
+      view.whenLayerView(treesLayer).then((treeTypeLayerView) => {
+        const query = treeTypeLayerView.layer.createQuery();
+        query.outFields = ['Nombre'];
+        query.groupByFieldsForStatistics= ['Nombre'];
+        query.orderByFields= ['SpeciesCount desc'];
+        query.outStatistics =  [{
+          "statisticType": "count", 
+          "onStatisticField": "Nombre", 
+          "outStatisticFieldName": "SpeciesCount"
+        }];
+        query.geometry = buffer;
+        console.log('query', query)
+        treesLayer.queryFeatures(query).then(r => {
+          msg.innerHTML = `En este área de 200 metros de radio hay ${r.features[0].attributes.SpeciesCount} árboles y la especie más abundante es <b>${r.features[0].attributes.Nombre}</b>.`
+        });
+      });
+    } else {
+      console.log('nope');
+      msg.innerHTML = '';
+    }
+    
+  });
 
   // Histograma
   // const params = {

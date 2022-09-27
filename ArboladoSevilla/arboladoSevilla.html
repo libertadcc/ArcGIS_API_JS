@@ -34,8 +34,17 @@
 </head>
 
 <body class="calcite-theme-light calcite-theme-app">
+    
     <calcite-shell dir="ltr">
-
+        
+        <div id="card-container" style="position: absolute;width:280px;bottom: 20px;left: 10px; background-color: gainsboro; z-index:3;">
+            <calcite-card>
+                <calcite-label>Obtener estadísticas
+                    <calcite-switch scale="m" id="stats"></calcite-switch>
+                </calcite-label>
+                <p id="msg-stats"></p>
+            </calcite-card>
+        </div>
         <calcite-shell-panel id="right-menu" slot="primary-panel" position="end" width-scale="s" collapsed="false">
             <calcite-panel heading="Filtro por especie" summary="Top 10 especies" class="toggle-panel"
                 data-toggle="top-tree-list">
