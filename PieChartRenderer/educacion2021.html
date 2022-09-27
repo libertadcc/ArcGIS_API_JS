@@ -1,0 +1,233 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Educación en España 2021</title>
+    <link rel="icon" type="image/x-icon" href="icon.png">
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <!-- ARCADE -->
+    <script type="text/plain" id="without-studies">
+        return $feature.Total_Analfabetos + $feature.Total_Estudios_primarios_incomp;
+    </script>
+    <script type="text/plain" id="primary-education">
+        return $feature.Total_Educación_primaria + $feature.Total_Primera_etapa_de_educació
+    </script>
+    <script type="text/plain" id="secondary-education">
+        return $feature.Total_Segunda_etapa_de_educació + $feature.Total_Segunda_etapa_de_educac_1
+    </script>
+    <script type="text/plain" id="ccaa-name">
+        var ccaa = $feature.NAME;
+        if (Find(',', ccaa) > 0) {
+            var name = Split(ccaa, ',')
+            return Text(name[1] + ' ' + name[0])
+        } else {
+            return ccaa
+        };
+    </script>
+
+
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Legend",
+            "esri/widgets/Expand",
+            "esri/layers/VectorTileLayer"
+        ], (Map, MapView, FeatureLayer, Legend, Expand, VectorTileLayer) => {
+
+            const arcadeExpressionInfos = [
+                {
+                    name: 'without-studies',
+                    title: "Sin estudios",
+                    expression: document.getElementById('without-studies').text
+                }, {
+                    name: 'primary-education',
+                    title: "Estudios primarios",
+                    expression: document.getElementById('primary-education').text
+                }, {
+                    name: 'secondary-education',
+                    title: "Estudios secundarios",
+                    expression: document.getElementById('secondary-education').text
+                },
+                {
+                    name: 'ccaa-name',
+                    title: 'CCAA',
+                    expression: document.getElementById('ccaa-name').text
+                }
+            ];
+
+            const vectorTileLayer = new VectorTileLayer({
+                portalItem: {
+                    id: "eaecdd15fa9844ba927fc52ac5b4cef8" // Forest and Parks Canvas
+                },
+                opacity: .75
+            });
+            const map = new Map({
+                // basemap: "dark-gray-vector"
+                basemap: {
+                    baseLayers: [vectorTileLayer]
+                }
+            });
+
+            const view = new MapView({
+                map: map,
+                container: "viewDiv",
+                center: [-3, 40],
+                zoom: 5,
+                constraints: {
+                    minScale: 9500000,
+                    maxScale: 900000,
+                    snapToZoom: false,
+                },
+                popup: {
+                    dockEnabled: true,
+                    dockOptions: {
+                        position: "top-right",
+                        buttonEnabled: false,
+                        breakpoint: false,
+                    },
+                },
+            });
+
+            const educationalRenderer = {
+                type: 'pie-chart',
+                size: 30,
+                attributes: [{
+                    valueExpression: arcadeExpressionInfos[0].expression,
+                    label: 'Sin educación primaria',
+                    color: '#FFAA00' 
+                }, {
+                    valueExpression: arcadeExpressionInfos[1].expression,
+                    label: 'Educación primaria',
+                    color: '#FFFF00'
+                }, {
+                    valueExpression: arcadeExpressionInfos[2].expression,
+                    label: 'Educación secundaria',
+                    color: '#AAFF00',
+                }, {
+                    field: 'Total_Educación_superior',
+                    label: 'Estudios superiores',
+                    color: '#4cc9f0',
+                }]
+            };
+
+            const educationLayer = new FeatureLayer({
+                url: 'https://services1.arcgis.com/YFraetVkEAF1lMag/ArcGIS/rest/services/NivelEstudios2021/FeatureServer/1',
+                renderer: educationalRenderer,
+                outFields: ['*'],
+                popupTemplate: {
+                    title: "{NAMEUNIT}",
+                    content: [{
+                        type: "media",
+                        mediaInfos: [{
+                            type: "pie-chart",
+                            value: {
+                                fields: [
+                                    'expression/without-studies',
+                                    'expression/primary-education',
+                                    'expression/secondary-education',
+                                    'Total_Educación_superior'
+                                ]
+                            }
+                        }]
+                    }, {
+                        type: "fields",
+                        title: 'Estudios de la población (%)',
+                        fieldInfos: [
+                            { fieldName: "expression/without-studies" },
+                            { fieldName: "expression/primary-education" },
+                            { fieldName: "expression/secondary-education" },
+                            { fieldName: "Total_Educación_superior",
+                              label: "Estudios superiores",
+                            }
+                        ]
+                    }],
+                    expressionInfos: arcadeExpressionInfos
+                }
+            });
+
+            const ccaaLayer = new FeatureLayer({
+                url: 'https://services1.arcgis.com/hcmP7kr0Cx3AcTJk/ArcGIS/rest/services/ESP_Boundaries_2017/FeatureServer/2',
+                // labelingInfo: [{// autocasts as new LabelClass()
+                //     symbol: {
+                //         type: "text", // autocasts as new TextSymbol()
+                //         font: {
+                //             size: 12,
+                //             weight: "bold"
+                //         },
+                //         color: "white",
+                //         haloColor: 'black',
+                //         haloSize: 1
+                //     },
+                //     labelPlacement: "above-center",
+                //     labelExpressionInfo: {
+                //         expression: arcadeExpressionInfos[3].expression
+                //     }
+                // }],
+                renderer: {
+                    type: 'simple',
+                    symbol: {
+                        type: 'simple-fill',
+                        outline: {
+                            width: 1.25,
+                            color: [237, 144, 14, 0.98]
+                        },
+                        color: 'transparent'
+                    }
+                }
+            });
+
+            const spainLayer = new FeatureLayer({
+                url: 'https://services1.arcgis.com/hcmP7kr0Cx3AcTJk/ArcGIS/rest/services/ESP_Boundaries_2017/FeatureServer/0',
+                effect: "drop-shadow(3px, 3px, 3px)",
+                renderer: {
+                    type: 'simple',
+                    symbol: {
+                        type: 'simple-fill',
+                        outline: {
+                            width: 1.5,
+                            color: [237, 144, 14, 0.98]
+                        },
+                        color: 'transparent'
+                    }
+                }
+            })
+
+            map.addMany([spainLayer, ccaaLayer, educationLayer]);
+
+            const legend = new Legend({
+                view,
+            });
+
+            const expandWidget = new Expand({
+                expandIconClass: "esri-icon-legend",
+                view: view,
+                content: legend
+            })
+
+            view.ui.add(expandWidget, 'top-left');
+        });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+</body>
+
+</html>

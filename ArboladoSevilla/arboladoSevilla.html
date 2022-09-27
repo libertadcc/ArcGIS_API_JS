@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbolado en la ciudad de Sevilla</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.24/"></script>
+    <!-- Calcite -->
+    <script type="module" src="https://js.arcgis.com/calcite-components/1.0.0-beta.94/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.0.0-beta.94/calcite.css" />
+
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #histogram {
+            width: 300px;
+            height: 200px;
+            position: absolute;
+            z-index: 2;
+            /* top: 200px; */
+        }
+    </style>
+</head>
+
+<body class="calcite-theme-light calcite-theme-app">
+    <calcite-shell dir="ltr">
+
+        <calcite-shell-panel id="right-menu" slot="primary-panel" position="end" width-scale="s" collapsed="false">
+            <calcite-panel heading="Filtro por especie" summary="Top 10 especies" class="toggle-panel"
+                data-toggle="top-tree-list">
+                <div slot="header-actions-end">
+                    <calcite-action icon="x" title="close panel" class="toggle-close" data-toggle="top-tree-list">
+                    </calcite-action>
+                </div>
+                <div class="margin-s">
+                    <calcite-button id="clear-selection-btn" width="full" icon-end="reset" appearance="outline" >Limpiar filtro</calcite-button>
+                </div>
+                <div style="margin-left:1px;">
+                    <calcite-tile-select-group id="tree-type-list" layout="vertical" >
+                        <!-- Naranjo amargo -->
+                        <calcite-tile-select heading="Citrus aurantium" description="36.553 ejemplares" value="Citrus aurantium"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/citrus.png">
+                        </calcite-tile-select>
+                        <!-- Tipa -->
+                        <calcite-tile-select heading="Tipuana tipu" description="6.360 ejemplares" value="Tipuana tipu"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/tipa.png">
+                        </calcite-tile-select>
+                        <!-- Melia o Cinamomo -->
+                        <calcite-tile-select heading="Melia azedarach" description="6.216 ejemplares" value="Melia azedarach"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/melia.png">
+                        </calcite-tile-select>
+                        <!-- Almez -->
+                        <calcite-tile-select heading="Celtis australis" description="5.605 ejemplares" value="Celtis australis"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/celtis.png">
+                        </calcite-tile-select>
+                        <!-- Sófora -->
+                        <calcite-tile-select heading="Sophora japonica" description="4.644 ejemplares" value="Sophora japonica"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/sophora.jpg">
+                        </calcite-tile-select>
+                        <!-- Jacaranda -->
+                        <calcite-tile-select heading="Jacaranda mimosifolia" description="4.375 ejemplares"
+                            value="Jacaranda mimosifolia" name="tree-type-item" input-enabled="true"
+                            input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/jacaranda.png">
+                        </calcite-tile-select>
+                        <!-- Árbol botella -->
+                        <calcite-tile-select heading="Brachychiton populneus" description="4.011 ejemplares"
+                            value="Brachychiton populneus" name="tree-type-item" input-enabled="true"
+                            input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/botella.jpg">
+                        </calcite-tile-select>
+                        <!-- Falsa acacia -->
+                        <calcite-tile-select heading="Robinia pseudoacacia" description="3.381 ejemplares"
+                            value="Robinia pseudoacacia" name="tree-type-item" input-enabled="true"
+                            input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/acacia.png">
+                        </calcite-tile-select>
+                        <!-- Plátano -->
+                        <calcite-tile-select heading="Platanus hispanica" description="3.077 ejemplares" value="Platanus hispanica"
+                            name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                            <img class="tree-thumbnail" height="80" src="images/platanus2.png">
+                        </calcite-tile-select>
+                        <!-- Aligustre -->
+                        <calcite-tile-select heading="Ligustrum lucidum" description="2.389 ejemplares" value="Ligustrum lucidum"
+                        name="tree-type-item" input-enabled="true" input-alignment="end" type="radio" width="full">
+                        <img class="tree-thumbnail" height="80" src="images/aligustre.png">
+                    </calcite-tile-select>
+                    </calcite-tile-select-group>
+                </div>
+            </calcite-panel>
+        </calcite-shell-panel>
+
+
+        <div id="viewDiv"></div>
+        <div id="histogram"></div>
+    </calcite-shell>
+    <script src="arboladoSevilla.js"></script>
+
+</body>
+
+</html>

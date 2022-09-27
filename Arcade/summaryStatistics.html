@@ -1,0 +1,258 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+
+    <title>Arcade profiles - summary statistics by geometry</title>
+
+    <style>
+      html,
+      body,
+      #viewDiv{
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      #instructions {
+        padding: 10px;
+        text-align: center;
+      }
+      #uiDiv {
+        padding: 10px;
+        max-width: 400px;
+      }
+      #sliderDiv {
+        padding: 10px;
+        width: 350px;
+        height: 50px;
+      }
+    </style>
+
+    <!-- ArcGIS JS API -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css"/>
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <script>
+      require([
+        "esri/views/MapView",
+        "esri/WebMap",
+        "esri/widgets/Slider",
+        "esri/Graphic",
+        "esri/arcade"
+      ], function (
+        MapView,
+        WebMap,
+        Slider,
+        Graphic,
+        arcade
+      ) {
+        (async () => {
+
+          const webmap = new WebMap({
+            basemap: "gray-vector"
+          });
+
+          const view = new MapView({
+            map: webmap,
+            container: "viewDiv",
+            center: [-117.15176, 32.72355 ],
+            scale: 36111,
+            popup: {
+              dockEnabled: true,
+              dockOptions: {
+                breakpoint: false,
+                position: "top-right"
+              }
+            },
+            constraints: {
+              snapToZoom: false
+            }
+          });
+
+          const displayDiv = document.getElementById("displayDiv");
+
+          const distanceSlider = new Slider({
+            min: 0,
+            max: 1,
+            steps: 0.05,
+            visibleElements: {
+              labels: true
+            },
+            precision: 2,
+            values: [ 0.2 ],
+            labelFormatFunction: (value, type) => {
+              return `${value.toString()} mi`;
+            },
+            container: "sliderDiv"
+          });
+
+          view.ui.add("uiDiv", "top-right");
+
+          await view.when();
+
+          const dataProfile = {
+            variables: [
+              {
+                name: "$mapClick",
+                type: "geometry"
+              },
+              {
+                name: "$bufferProps",
+                type: "dictionary",
+                properties: [
+                  {
+                    name: "distance",
+                    type: "number"
+                  },
+                  {
+                    name: "units",
+                    type: "text"
+                  }
+                ]
+              }
+            ]
+          };
+
+          const arcadeExpression = `
+            var p = Portal('https://www.arcgis.com');
+            var features = FeatureSetByPortalItem(p, '03c5236e3d7f496baca4c992f3c2e89c', 0, ["is_night", "type"], true);
+            var bufferGeometry = BufferGeodetic(
+              $mapClick,
+              $bufferProps.distance,
+              $bufferProps.units
+            );
+            var topCrimes = Top(
+              OrderBy(
+                GroupBy(
+                  Intersects( features, Generalize(bufferGeometry, 10, true, "meters") ),
+                  "type",
+                  [
+                    { name: "total", expression: "1", statistic: "count" },
+                    { name: "nightPercent", expression: "is_night", statistic: "avg" }
+                  ]
+                ),
+                "total desc"),
+              5
+            );
+            if(Count(topCrimes) == 0){
+              return {
+                table: "No crimes reported in this area",
+                buffer: bufferGeometry
+              };
+            }
+            // Build an HTML table to display the summary of
+            // crimes by count and how many occurred at night
+            var cssGray = "style='background-color:#e3e3e3;'";
+            var cssRight = "style='text-align: right;'";
+            var cssCenter = "style='text-align: center;'";
+            var table = "<table style='width: 100%'>";
+            table += \`<tr>
+              <td \${cssCenter}><b>Category</b></td>
+              <td \${cssCenter}><b>Count</b></td>
+              <td \${cssCenter}><b>% at night</b></td>
+            </tr>\`;
+            var i = 0;
+            for(var item in topCrimes){
+              var num_crimes = Text(item.total, "#,###");
+              var night_percent = Text(item.nightPercent, "#%");
+              var crimeType = item["type"];
+              table += \`<tr \${IIF( i % 2 != 0, cssGray, null )}>
+                <td>\${crimeType}</td>
+                <td \${cssRight}>\${num_crimes}</td>
+                <td \${cssRight}>\${night_percent}</td>
+              </tr>\`;
+              i++;
+            }
+            table += "</table>";
+            return {
+              table: table,
+              buffer: bufferGeometry
+            };
+          `;
+
+          // Compile the color variable expression and create an executor
+          const dataArcadeExecutor = await arcade.createArcadeExecutor(
+            arcadeExpression,
+            dataProfile
+          );
+
+          let currentPoint = null;
+
+          async function fetchSummaryStatistics({
+            mapPoint,
+            distance
+          }) {
+
+            const arcadeResult = await dataArcadeExecutor.executeAsync({
+              $mapClick: mapPoint,
+              $bufferProps: {
+                distance,
+                units: "miles"
+              }
+            }, {
+              spatialReference: view.spatialReference
+            });
+
+            displayDiv.innerHTML = arcadeResult.table;
+            addBufferToView(arcadeResult.buffer);
+          }
+
+          view.on("click", async (event) => {
+            const { mapPoint } = event;
+            currentPoint = mapPoint;
+            const distance = distanceSlider.values[0];
+
+            document.body.style.cursor = "wait";
+            await fetchSummaryStatistics({ mapPoint, distance });
+            document.body.style.cursor = "default";
+          });
+
+          distanceSlider.on(["thumb-drag", "track-click", "thumb-change"], async ({ state, value }) => {
+            if(state && state !== "stop" || !currentPoint){
+              return;
+            }
+
+            document.body.style.cursor = "wait";
+            await fetchSummaryStatistics({ mapPoint: currentPoint, distance: value });
+            document.body.style.cursor = "default";
+          });
+
+          function addBufferToView(buffer){
+            view.graphics.removeAll();
+            view.graphics.add(new Graphic({
+              attributes: {
+                OBJECTID: 1
+              },
+              geometry: buffer,
+              symbol: {
+                type: "simple-fill",
+                style: "forward-diagonal",
+                color: "purple",
+                outline: {
+                  style: "dash",
+                  width: 3,
+                  color: "purple"
+                }
+              }
+            }));
+          }
+        })()
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <div id="uiDiv" class="esri-widget">
+      <div id="instructions">
+        <h2>Search crime statistics</h2>
+        <p>Click any location in the San Diego area to view crime statistics within a distance specified on the slider.</p>
+        <div id="sliderDiv"></div>
+      </div>
+      <div id="displayDiv" class="esri-widget"></div>
+    </div>
+  </body>
+</html>

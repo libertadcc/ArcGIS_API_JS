@@ -1,0 +1,298 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <title>Arcade profiles - line segment labeling</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css"/>
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #titleDiv {
+        max-width: 300px;
+        padding: 10px;
+      }
+      #sketchTools{
+        align-items: center;
+      }
+    </style>
+    <script>
+      require([
+        "esri/widgets/Sketch",
+        "esri/Map",
+        "esri/Graphic",
+        "esri/layers/GraphicsLayer",
+        "esri/views/MapView",
+        "esri/symbols/TextSymbol",
+        "esri/arcade",
+        "esri/widgets/Search",
+        "esri/widgets/BasemapGallery"
+      ], (Sketch, Map, Graphic, GraphicsLayer, MapView, TextSymbol, arcade, Search, BasemapGallery) => {
+        (async () => {
+          const graphicsLayer = new GraphicsLayer();
+          const labelLayer = new GraphicsLayer();
+
+          const map = new Map({
+            basemap: "topo-vector",
+            layers: [graphicsLayer, labelLayer]
+          });
+
+          const view = new MapView({
+            container: "viewDiv",
+            map: map,
+            scale: 4514,
+            center: [-117.4203, 47.6615 ]
+          });
+
+          view.ui.add("titleDiv", "top-right");
+
+          await view.when();
+          const sketch = new Sketch({
+            layer: graphicsLayer,
+            view,
+            creationMode: "update",
+            visibleElements: {
+              createTools: {
+                point: false,
+                polyline: true,
+                polygon: false,
+                rectangle: false,
+                circle: false
+              },
+              selectionTools: {
+                "rectangle-selection": false,
+                "lasso-selection": false
+              },
+              snappingControlsElements: {
+                layerList: false
+              }
+            },
+            container: "sketchTools"
+          });
+
+          // view.ui.add(sketch, "top-right");
+
+          const labelSegmentProfile = {
+            variables: [
+              {
+                name: "$feature",
+                type: "feature"
+              }
+            ]
+          };
+
+          // Expression for calculating measurements for active line segment
+          const labelSegmentExpression = `
+            var paths = Geometry($feature).paths;
+            var finalPath = Back(paths);
+            var finalPoint = Back(finalPath);
+            var previousPoint = finalPath[Count(finalPath)-2];
+            var a = Angle(previousPoint, finalPoint);
+            var b = Bearing(previousPoint, finalPoint);
+            var c = When(
+              (b < 22.5 && b >= 0) || b > 337.5, 'N',
+              b >= 22.5 && b < 67.5, 'NE',
+              b >= 67.5 && b < 112.5, 'E',
+              b >= 112.5 && b < 157.5, 'SE',
+              b >= 157.5 && b < 202.5, 'S',
+              b >= 202.5 && b < 247.5, 'SW',
+              b >= 247.5 && b < 292.5, 'W',
+              b >= 292.5 && b < 337.5, 'NW',
+              ''
+            );
+            var d = DistanceGeodetic(previousPoint, finalPoint, "meters");
+            return {
+              label: {
+                text: Text(d, "#,###.#") + "m\\nBearing: " + Text(b, "#.#°") + " (" + c + ")",
+                // symbol angle direction is opposite of Angle function
+                angle: iif(b < 180, a * -1, a * -1 + 180),
+                color: "black",
+                font: {
+                  family: "Orbitron",
+                  style: "normal",
+                  weight: "bold",
+                  size: 9
+                },
+                haloColor: "white",
+                haloSize: 1.5,
+                yoffset: 4,
+                xoffset: iif((b <= 180 && b > 90) || b >= 270, 4, -4),
+                horizontalAlignment: "center",
+                verticalAlignment: "bottom"
+              },
+              location: Centroid([previousPoint, finalPoint])
+            };
+          `;
+
+          // Compile the expression and create an executor
+          const arcadeExecutor = await arcade.createArcadeExecutor(
+            labelSegmentExpression,
+            labelSegmentProfile
+          );
+
+          let activeLabel = null;
+          let createId = 0;
+
+          sketch.on("create", ({ state, graphic, tool, toolEventInfo }) => {
+            if(tool === "polyline" && state === "active"){
+
+              if(labelLayer.graphics.includes(activeLabel)){
+
+                // clear graphic on each update
+                labelLayer.graphics.remove(activeLabel);
+                  activeLabel = null;
+                }
+
+                graphic.attributes = {
+                  lineId: createId
+                };
+
+                // create label symbol and position
+                const { label, location } = arcadeExecutor.execute({
+                  $feature: graphic
+                });
+
+                activeLabel = new Graphic({
+                  symbol: new TextSymbol(label),
+                  geometry: location,
+                  attributes: {
+                    lineId: createId
+                  }
+                });
+
+                labelLayer.graphics.add(activeLabel);
+
+                // start new measurement for each added vertex
+                if(toolEventInfo.type === "vertex-add"){
+                  activeLabel = null;
+                }
+              }
+
+            if(state === "complete"){
+              createId++;
+            }
+
+          });
+
+          // Expression for labeling all segments of a previously created line
+          const labelAllSegmentsExpression = `
+            var paths = Geometry($feature).paths;
+            var finalPath = Back(paths);
+            var labels = [];
+            var firstPoint;
+            var lastPoint;
+            for (var i in finalPath){
+              if(IsEmpty(firstPoint)){
+                firstPoint = finalPath[i];
+                continue;
+              }
+              if(IsEmpty(lastPoint)){
+                lastPoint = finalPath[i];
+                var a = Angle(firstPoint, lastPoint);
+                var b = Bearing(firstPoint, lastPoint);
+                var c = When(
+                  (b < 22.5 && b >= 0) || b > 337.5, 'N',
+                  b >= 22.5 && b < 67.5, 'NE',
+                  b >= 67.5 && b < 112.5, 'E',
+                  b >= 112.5 && b < 157.5, 'SE',
+                  b >= 157.5 && b < 202.5, 'S',
+                  b >= 202.5 && b < 247.5, 'SW',
+                  b >= 247.5 && b < 292.5, 'W',
+                  b >= 292.5 && b < 337.5, 'NW',
+                  null
+                );
+                var d = DistanceGeodetic(firstPoint, lastPoint, "meters");
+                Push(labels, {
+                  label: {
+                    text: Text(d, "#,###.#") + "m\\nBearing: " + Text(b, "#.#°") + " (" + c + ")",
+                    angle: iif(b < 180, a * -1, a * -1 + 180),
+                    color: "black",
+                    font: {
+                      family: "Orbitron",
+                      style: "normal",
+                      weight: "bold",
+                      size: 9
+                    },
+                    haloColor: "white",
+                    haloSize: 1.5,
+                    yoffset: 4,
+                    xoffset: iif((b <= 180 && b > 90) || b >= 270, 4, -4),
+                    horizontalAlignment: "center",
+                    verticalAlignment: "bottom"
+                  },
+                  location: Centroid([firstPoint, lastPoint])
+                });
+                firstPoint = lastPoint;
+                lastPoint = null;
+              }
+            }
+            return labels;
+          `;
+
+          // Compile the expression and create an executor
+          const labelAllSegmentsExecutor = await arcade.createArcadeExecutor(
+            labelAllSegmentsExpression,
+            labelSegmentProfile
+          );
+
+          sketch.on(["update", "undo", "redo"], ({ type, state, graphics, tool, toolEventInfo }) => {
+            if(state === "active" || type === "undo" || type === "redo"){
+
+              graphics.forEach(graphic => {
+
+                const oldLabels = labelLayer.graphics.filter(label => graphic.attributes.lineId === label.attributes.lineId);
+                labelLayer.graphics.removeMany(oldLabels);
+
+                const labels = labelAllSegmentsExecutor.execute({
+                  $feature: graphic
+                });
+
+                const labelGraphics = labels.map(({ label, location }) => {
+                  activeLabel = new Graphic({
+                    symbol: new TextSymbol(label),
+                    geometry: location,
+                    attributes: {
+                      lineId: graphic.attributes.lineId
+                    }
+                  });
+
+                  return activeLabel;
+                });
+
+                labelLayer.graphics.addMany(labelGraphics);
+              });
+            }
+
+
+          });
+
+          sketch.on("delete", ({ graphics }) => {
+            graphics.forEach(graphic => {
+              const oldLabels = labelLayer.graphics.filter(label => graphic.attributes.lineId === label.attributes.lineId);
+              labelLayer.graphics.removeMany(oldLabels);
+            });
+          });
+
+        })()
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <div id="titleDiv" class="esri-widget">
+      <h1 id="title">Measure by segment</h1>
+      <p>Use the sketch tools to create a line. Each line segment will be labeled with its geodesic length, bearing (compass direction), and angle from the previous point.</p>
+      <div id="sketchTools"></div>
+    </div>
+  </body>
+</html>
