@@ -136,11 +136,19 @@ require([
   //   size: 7
   // };
   let buffer;
+  let msg = document.getElementById('msg-stats');
   const check = document.getElementById('stats');
 
+
+  check.addEventListener('calciteSwitchChange', (evt) => {
+    if (evt.detail.switched === false) {
+      msg.innerHTML = '';
+      bufferLayer.removeAll();
+    }
+  });
   
   view.on('click', evt => {
-    let msg = document.getElementById('msg-stats');
+    
     bufferLayer.removeAll();
 
     if(check.checked) {
@@ -169,10 +177,7 @@ require([
           msg.innerHTML = `En este área de 200 metros de radio hay ${r.features[0].attributes.SpeciesCount} árboles y la especie más abundante es <b>${r.features[0].attributes.Nombre}</b>.`
         });
       });
-    } else {
-      console.log('nope');
-      msg.innerHTML = '';
-    }
+    } 
     
   });
 
