@@ -1,0 +1,116 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Hosted ImageryTileLayer with VectorFieldRenderer | Sample | ArcGIS API for
+      JavaScript 4.24
+    </title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.24/esri/themes/dark/main.css"
+    />
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/ImageryTileLayer",
+        "esri/widgets/Legend",
+        "esri/widgets/TimeSlider",
+        "esri/widgets/Expand"
+      ], (Map, MapView, ImageryTileLayer, Legend, TimeSlider, Expand) => {
+        // create a new instance of an imagery tile layer and apply
+        // VectorFieldRenderer to show the speed and direction of wind
+        // as recorded on  Oct 1, 2011
+        const layer = new ImageryTileLayer({
+          url: "https://tiledimageservices.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/NLDAS_Hourly_8_30_2021/ImageServer",
+          title: "NLDAS - Magnitudes por hora",
+          renderer: {
+            type: "vector-field",
+            style: "classified-arrow",
+            flowRepresentation: "flow-to", // show flow to angle for wind direction
+            symbolTileSize: 30,
+            visualVariables: [
+              {
+                type: "size",
+                field: "Magnitude", // values read from the first band
+                maxDataValue: 32,
+                maxSize: "60px",
+                minDataValue: 0.04,
+                minSize: "20px"
+              }
+            ]
+          }
+        });
+
+        const map = new Map({
+          basemap: "dark-gray-vector",
+          layers: [layer]
+        });
+
+        const view = new MapView({
+          map: map,
+          container: "viewDiv",
+          center: [-100, 38],
+          zoom: 3
+        });
+
+        // time slider widget initialization
+        // users can visualize daily wind information
+        // for the month of Oct 2011 using time slider
+        const timeSlider = new TimeSlider({
+          container: "timeSlider",
+          mode: "instant",
+          view: view,
+          timeVisible: true,
+          // Oct 1 - Oct 31
+          fullTimeExtent: {
+            start: new Date(1317427200000), // Oct 1, 2021,
+            end: new Date(1320019200000) // Oct 31, 2021
+          },
+          stops: {
+            interval: {
+              value: 24,
+              unit: "hours"
+            }
+          }
+        });
+        view.ui.add(timeSlider, "bottom-left");
+
+        // add a legend for the wind direction and speed layer
+        const legendExpand = new Expand({
+          collapsedIconClass: "esri-icon-collapse",
+          expandIconClass: "esri-icon-expand",
+          expandTooltip: "Legend",
+          view,
+          content: new Legend({
+            view
+          }),
+          expanded: false
+        });
+        view.ui.add(legendExpand, "top-left");
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>

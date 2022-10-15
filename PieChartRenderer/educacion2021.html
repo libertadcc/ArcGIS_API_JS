@@ -29,6 +29,10 @@
     <script type="text/plain" id="secondary-education">
         return $feature.Total_Segunda_etapa_de_educació + $feature.Total_Segunda_etapa_de_educac_1
     </script>
+    <script type="text/plain" id="population">
+        return Text($feature.Poblacion, "#,###")
+    </script>
+    <!-- Debería ser NAMEUNIT no name pero falla -->
     <script type="text/plain" id="ccaa-name">
         var ccaa = $feature.NAME;
         if (Find(',', ccaa) > 0) {
@@ -69,6 +73,11 @@
                     name: 'ccaa-name',
                     title: 'CCAA',
                     expression: document.getElementById('ccaa-name').text
+                },
+                {
+                    name: 'population',
+                    title: 'Población',
+                    expression: document.getElementById('population').text
                 }
             ];
 
@@ -105,13 +114,13 @@
                 },
             });
 
-            const educationalRenderer = {
+            let educationalRenderer = {
                 type: 'pie-chart',
                 size: 30,
                 attributes: [{
                     valueExpression: arcadeExpressionInfos[0].expression,
                     label: 'Sin educación primaria',
-                    color: '#FFAA00' 
+                    color: '#FFAA00'
                 }, {
                     valueExpression: arcadeExpressionInfos[1].expression,
                     label: 'Educación primaria',
@@ -124,16 +133,42 @@
                     field: 'Total_Educación_superior',
                     label: 'Estudios superiores',
                     color: '#4cc9f0',
-                }]
+                }],
             };
 
+//                 visualVariables: [{
+// type: "size",
+// field: "Poblacion",
+// // minSize: 20,
+// // maxSize: 720,
+// minDataValue: 63000,
+// maxDataValue: 7500000,
+// stops: [
+//     { value: 63000, size: 4, label: "<15%" },
+//     { value: 2000000, size: 12, label: "25%" },
+//     { value: 7500000, size: 24, label: ">35%" }
+//   ]
+//                 }]
+            educationalRenderer.visualVariables = [{
+                type: "size",
+                field: "Poblacion",
+                minSize: 30,
+                maxSize: 60,
+                minDataValue: 70000,
+                maxDataValue: 7500000
+            }]
+
             const educationLayer = new FeatureLayer({
-                url: 'https://services1.arcgis.com/YFraetVkEAF1lMag/ArcGIS/rest/services/NivelEstudios2021/FeatureServer/1',
+                url: 'https://services1.arcgis.com/YFraetVkEAF1lMag/arcgis/rest/services/Nivel_estudios_y_población_por_CCAA_2021/FeatureServer/1',
+                
                 renderer: educationalRenderer,
                 outFields: ['*'],
                 popupTemplate: {
                     title: "{NAMEUNIT}",
                     content: [{
+                        type: 'text',
+                        text: 'La población mayor de 16 años en {Nombre} es de {expression/population} personas.'
+                    },{
                         type: "media",
                         mediaInfos: [{
                             type: "pie-chart",
@@ -153,8 +188,9 @@
                             { fieldName: "expression/without-studies" },
                             { fieldName: "expression/primary-education" },
                             { fieldName: "expression/secondary-education" },
-                            { fieldName: "Total_Educación_superior",
-                              label: "Estudios superiores",
+                            {
+                                fieldName: "Total_Educación_superior",
+                                label: "Estudios superiores",
                             }
                         ]
                     }],
@@ -164,22 +200,23 @@
 
             const ccaaLayer = new FeatureLayer({
                 url: 'https://services1.arcgis.com/hcmP7kr0Cx3AcTJk/ArcGIS/rest/services/ESP_Boundaries_2017/FeatureServer/2',
-                // labelingInfo: [{// autocasts as new LabelClass()
-                //     symbol: {
-                //         type: "text", // autocasts as new TextSymbol()
-                //         font: {
-                //             size: 12,
-                //             weight: "bold"
-                //         },
-                //         color: "white",
-                //         haloColor: 'black',
-                //         haloSize: 1
-                //     },
-                //     labelPlacement: "above-center",
-                //     labelExpressionInfo: {
-                //         expression: arcadeExpressionInfos[3].expression
-                //     }
-                // }],
+
+                labelingInfo: [{// autocasts as new LabelClass()
+                    symbol: {
+                        type: "text", // autocasts as new TextSymbol()
+                        font: {
+                            size: 12,
+                            weight: "bold"
+                        },
+                        color: "white",
+                        haloColor: 'black',
+                        haloSize: 1
+                    },
+                    labelPlacement: "above-center",
+                    labelExpressionInfo: {
+                        expression: arcadeExpressionInfos[3].expression
+                    }
+                }],
                 renderer: {
                     type: 'simple',
                     symbol: {

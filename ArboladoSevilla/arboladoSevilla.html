@@ -11,7 +11,8 @@
     <!-- Calcite -->
     <script type="module" src="https://js.arcgis.com/calcite-components/1.0.0-beta.94/calcite.esm.js"></script>
     <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.0.0-beta.94/calcite.css" />
-
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2997/2997051.png">
 
     <style>
         html,
@@ -22,14 +23,6 @@
             height: 100%;
             width: 100%;
         }
-
-        #histogram {
-            width: 300px;
-            height: 200px;
-            position: absolute;
-            z-index: 2;
-            /* top: 200px; */
-        }
     </style>
 </head>
 
@@ -39,13 +32,14 @@
         
         <div id="card-container" style="position: absolute;width:280px;bottom: 20px;left: 10px; background-color: gainsboro; z-index:3;">
             <calcite-card>
-                <calcite-label>Obtener estadísticas
+                <calcite-label>
+                    <h3>Obtener estadísticas</h3>
                     <calcite-switch scale="m" id="stats"></calcite-switch>
                 </calcite-label>
                 <p id="msg-stats"></p>
             </calcite-card>
         </div>
-        <calcite-shell-panel id="right-menu" slot="primary-panel" position="end" width-scale="s" collapsed="false">
+        <calcite-shell-panel id="right-menu" slot="primary-panel" position="end" width-scale="m" collapsed="false">
             <calcite-panel heading="Filtro por especie" summary="Top 10 especies" class="toggle-panel"
                 data-toggle="top-tree-list">
                 <div slot="header-actions-end">
@@ -117,7 +111,6 @@
 
 
         <div id="viewDiv"></div>
-        <div id="histogram"></div>
     </calcite-shell>
     <script src="arboladoSevilla.js"></script>
 

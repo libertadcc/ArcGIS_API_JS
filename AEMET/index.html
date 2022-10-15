@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.24/"></script>
+    
+    <title>Uso del suelo en Rueda</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2836/2836993.png">
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+
+    <script type="text/plain" id="land-use">
+        var use = DomainName($feature,"USO_SIGPAC");
+        if(use == "Edificaciones" || use == "Zona Urbana" || use == "Viales") {
+            return "Zonas Edificadas";
+        } else if (use == "Improductivos" || use == "Tierras arables") {
+            return "No productoras";
+        } else if (use == "Pasto arbustivo" || use == "Pastizal" || use == "Pasto con arbolado") {
+            return "Pasto";
+        } else if (use == "Viñedo") {
+            return "Viñedo";
+        } else if (use == "Corrientes y superficies de agua") {
+            return "Agua";
+        } else if (use == "Forestal") {
+            return "Bosque";
+        } else if (use == "Frutales" || use == "Olivar" || use == "Frutos secos") {
+            return "Otros cultivos arbóreos";
+        }   
+    </script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer"
+        ], function (
+            Map,
+            MapView,
+            FeatureLayer
+        ) {
+            const landUse = document.getElementById("land-use").text;
+            let arcadeRenderer = {
+                type: "unique-value",
+                valueExpression: landUse,
+                uniqueValueInfos: [
+                    {
+                        value: "Zonas Edificadas",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#BD7EBE",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "No productoras",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#FD7F6F",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Pasto",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#7EB0D5",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Viñedo",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#B2E061",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Bosque",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#FFB55A",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Agua",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#FFEE65",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Otros cultivos arbóreos",
+                        symbol: {
+                            type: "simple-fill",
+                            color: "#BEB9DB",
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                ],
+            };
+
+            var rueda = new FeatureLayer({
+                url: "https://services1.arcgis.com/YFraetVkEAF1lMag/ArcGIS/rest/services/Recintos_SIGPAC_Rueda/FeatureServer/0",
+                // renderer: arcadeRenderer,
+            });
+
+            const map = new Map({
+                basemap: "dark-gray-vector",
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-4.959, 41.41],
+                zoom: 11,
+                container: "viewDiv",
+            });
+           
+            map.add(rueda); 
+        });
+    </script>
+
+</body>
+
+</html>
