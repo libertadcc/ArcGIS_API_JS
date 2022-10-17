@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.24/"></script>
     
+    <!-- Calcite -->
+    <script type="module" src="https://js.arcgis.com/calcite-components/1.0.0-beta.95/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.0.0-beta.95/calcite.css" />
+
     <title>Uso del suelo en Rueda</title>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2836/2836993.png">
@@ -22,10 +26,37 @@
             height: 100%;
             width: 100%;
         }
+        #card-container {
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            right: 10px;
+        }
+        #uva {
+            width: 25px;
+        }
     </style>
 </head>
 
 <body>
+    <div id="card-container" style="width:280px">
+        <calcite-card>
+            <span slot="title"> <img id="uva" src="https://cdn-icons-png.flaticon.com/512/2836/2836993.png" alt="Icono racimo de uva"> Denominación de Origen Rueda</span>
+            <p>
+                Rueda es una denominación de origen protegida cuya zona de producción se encuentra en las provincias de <b>Valladolid, Segovia y Ávila </b> (España). 
+            </p>
+            <p>
+                Esta D.O. está integrada por 72 municipios de los cuales 53 se sitúan al sur de la provincia de Valladolid, 17 al oeste de Segovia y 2 al norte de Ávila.
+            </p>
+            <p>
+                El carácter Rueda está definido por tres elementos: la uva Verdejo,  el clima mediterráneo continentalizado y los suelos cascajosos.
+            </p>
+
+            <h3>Rueda (Valladolid)</h3>
+            <p>Rueda es una localidad y municipio de la provincia de Valladolid, Castilla y León. Es centro neurálgico de una de las zonas de vinos blancos más importante de España, la Denominación de Origen Rueda. </p>
+            <p>Tiene una población de 1300 habitantes a 1 de enero de 2017, según el INE. El gentilicio es rodense o popularmente caleros, este último debido a la gran cantidad de cal que tiene esta villa.</p>
+        </calcite-card>
+    </div>
     <div id="viewDiv"></div>
 
     <script type="text/plain" id="land-use">
@@ -44,7 +75,8 @@
             return "Bosque";
         } else if (use == "Frutales" || use == "Olivar" || use == "Frutos secos") {
             return "Otros cultivos arbóreos";
-        }   
+        }
+        
     </script>
 
     <script>

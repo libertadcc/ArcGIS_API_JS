@@ -10,4 +10,6 @@ Se hacen cálculos estadísticos sobre una zona determinada viendo el número de
 ![Captura de la aplicación](images/Arbolado.png)
 
 
+### [Nivel de educación por provincia](https://libertadcc.github.io/ArcGIS_API_JS/PieChartRenderer/educacion2021.html)
 
+![Captura de la aplicación](images/Estudios.png)
